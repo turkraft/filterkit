@@ -234,7 +234,7 @@ export class LogicResult extends StepWithResultImpl {
 }
 
 export class FieldResult extends StepWithResultImpl {
-  equal(to: StepWithResult): LogicResult {
+  equal(to: RawValue | StepWithResult): LogicResult {
     return new ComparisonResult(this.getOperators(), this.get()).equal(to);
   }
   notEqual(to: RawValue | StepWithResult): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).notEqual(to); }
