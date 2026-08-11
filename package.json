@@ -1,0 +1,47 @@
+{
+  "name": "filterkit",
+  "version": "1.0.0",
+  "description": "Filter expression language — parse, build, and transform filter queries. 100% syntax-compatible with Spring Filter (Java).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/turkraft/filterkit.git"
+  },
+  "author": "Yusuf Torshid",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/turkraft/filterkit/issues"
+  },
+  "homepage": "https://github.com/turkraft/filterkit#readme",
+  "keywords": [
+    "filter",
+    "expression",
+    "parser",
+    "query",
+    "filtering",
+    "dsl",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.1.0"
+  }
+}

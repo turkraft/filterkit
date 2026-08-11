@@ -1,0 +1,89 @@
+export {
+  FilterNode,
+  FieldNode,
+  InputNode,
+  PlaceholderNode,
+  PriorityNode,
+  FunctionNode,
+  CollectionNode,
+  CollectionLikeNode,
+  InfixOperationNode,
+  PrefixOperationNode,
+  PostfixOperationNode,
+  OperationNode,
+  FilterOperator,
+  FilterPrefixOperator,
+  FilterInfixOperator,
+  FilterPostfixOperator,
+  FilterFunction,
+  FilterPlaceholder,
+  type FilterDefinition,
+} from './nodes.js';
+
+export {
+  EqualOperator,
+  NotEqualOperator,
+  GreaterThanOperator,
+  GreaterThanOrEqualOperator,
+  LessThanOperator,
+  LessThanOrEqualOperator,
+  LikeOperator,
+  InsensitiveLikeOperator,
+  InOperator,
+  NotInOperator,
+  AndOperator,
+  OrOperator,
+  XorOperator,
+  NotOperator,
+  IsNullOperator,
+  IsNotNullOperator,
+  IsEmptyOperator,
+  IsNotEmptyOperator,
+  SizeFunction,
+  TodayFunction,
+  HelloWorldPlaceholder,
+  FilterOperatorsImpl,
+  getDefaultOperators,
+  type FilterOperators,
+  type OperatorToken,
+} from './operators.js';
+
+export {
+  FilterParserImpl,
+  ParseContextImpl,
+  InvalidSyntaxException,
+  FunctionResolver,
+  PlaceholderResolver,
+  type FilterParser,
+  type ParseContext,
+} from './parser.js';
+
+export {
+  FilterBuilder,
+  FieldResult,
+  InputResult,
+  CollectionResult,
+  ComparisonResult,
+  LogicResult,
+  FunctionResult,
+  PlaceholderResult,
+  PriorityResult,
+  type Step,
+  type StepWithResult,
+} from './builder.js';
+
+export {
+  FilterStringTransformer,
+  BaseFilterNodeTransformer,
+  type FilterNodeTransformer,
+} from './transformer.js';
+
+export {
+  parse,
+  stringify,
+  build,
+  filter,
+  matches,
+  expr,
+  createPredicate,
+} from './filterkit.js';
