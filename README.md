@@ -1,6 +1,6 @@
 # FilterKit
 
-Filter expression language for JavaScript and TypeScript. Filter arrays in-memory, or build filter queries to send to [Spring Filter](https://github.com/turkraft/springfilter) backends. Same expression syntax across your entire stack.
+Filter expression language for JavaScript and TypeScript. Filter arrays in-memory, or build filter queries to send to [Spring Filter](https://github.com/turkraft/springfilter) backends.
 
 ```ts
 import { filter, build, stringify } from '@turkraft/filterkit';
@@ -17,7 +17,7 @@ const query = build()
 fetch(`/api/cars?filter=${encodeURIComponent(stringify(query))}`);
 ```
 
-FilterKit and Spring Filter share the exact same expression syntax, operator precedence, and AST. Use the same filter language everywhere.
+filterkit and Spring Filter share the exact same expression syntax, operator precedence, and AST.
 
 ## Install
 
@@ -26,8 +26,6 @@ npm install @turkraft/filterkit
 ```
 
 ## Ecosystem
-
-FilterKit powers these integrations:
 
 | Package | Description |
 |---|---|
