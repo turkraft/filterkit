@@ -25,6 +25,10 @@ fetch(`/api/cars?filter=${encodeURIComponent(stringify(query))}`);
 npm install @turkraft/filterkit
 ```
 
+## [Sponsors](https://github.com/sponsors/torshid)
+
+Sponsor this project and have your issues prioritized.
+
 ## Usage
 
 ### Filtering arrays
