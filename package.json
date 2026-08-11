@@ -1,5 +1,5 @@
 {
-  "name": "filterkit",
+  "name": "@turkraft/filterkit",
   "version": "1.0.0",
   "description": "Filter expression language — parse, build, and transform filter queries. 100% syntax-compatible with Spring Filter (Java).",
   "type": "module",

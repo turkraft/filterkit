@@ -3,7 +3,7 @@
 Filter expression language for JavaScript and TypeScript. Filter arrays in-memory, or build filter queries to send to [Spring Filter](https://github.com/turkraft/springfilter) backends. Same expression syntax across your entire stack.
 
 ```ts
-import { filter, build, stringify } from 'filterkit';
+import { filter, build, stringify } from '@turkraft/filterkit';
 
 // Filter an array
 const adults = filter(users, "age > 18 and status : 'active'");
@@ -17,12 +17,12 @@ const query = build()
 fetch(`/api/cars?filter=${encodeURIComponent(stringify(query))}`);
 ```
 
-FilterKit and Spring Filter share the exact same expression syntax, operator precedence, and AST. Use the same filter language everywhere.
+@turkraft/filterkit and Spring Filter share the exact same expression syntax, operator precedence, and AST. Use the same filter language everywhere.
 
 ## Install
 
 ```bash
-npm install filterkit
+npm install @turkraft/filterkit
 ```
 
 ## Usage
@@ -30,7 +30,7 @@ npm install filterkit
 ### Filtering arrays
 
 ```ts
-import { filter, matches } from 'filterkit';
+import { filter, matches } from '@turkraft/filterkit';
 
 const data = [
   { name: 'John', age: 30, active: true },
@@ -44,7 +44,7 @@ matches(data[0], "active : true");     // => true
 ### Building queries for Spring Filter
 
 ```ts
-import { build, stringify } from 'filterkit';
+import { build, stringify } from '@turkraft/filterkit';
 
 const node = build()
   .field('year').greaterThan(2020)
@@ -67,7 +67,7 @@ build().field('brand.name').in(['audi', 'bmw'])
 With functions:
 
 ```ts
-import { SizeFunction } from 'filterkit';
+import { SizeFunction } from '@turkraft/filterkit';
 
 build().function(new SizeFunction(), build().field('accidents'))
   .greaterThan(2)
@@ -78,7 +78,7 @@ build().function(new SizeFunction(), build().field('accidents'))
 ### Parsing and stringifying
 
 ```ts
-import { parse, stringify } from 'filterkit';
+import { parse, stringify } from '@turkraft/filterkit';
 
 const ast = parse("a > '18' and b : 'c'");
 stringify(ast);  // AST back to canonical string
@@ -175,7 +175,7 @@ brand.name in ['audi', 'bmw'] and year > 2020 and accidents is empty and color !
 Define custom operators by extending `FilterInfixOperator`, `FilterPrefixOperator`, or `FilterPostfixOperator`:
 
 ```ts
-import { FilterInfixOperator, FilterOperatorsImpl, getDefaultOperators, FilterParserImpl } from 'filterkit';
+import { FilterInfixOperator, FilterOperatorsImpl, getDefaultOperators, FilterParserImpl } from '@turkraft/filterkit';
 
 class ContainsOperator extends FilterInfixOperator {
   constructor() { super('contains', 100); }
@@ -196,7 +196,7 @@ Custom operators work in all APIs — parse, build, filter, and stringify.
 ## Custom functions and placeholders
 
 ```ts
-import { FilterFunction, FilterPlaceholder, FunctionResolver, PlaceholderResolver } from 'filterkit';
+import { FilterFunction, FilterPlaceholder, FunctionResolver, PlaceholderResolver } from '@turkraft/filterkit';
 
 class LengthFunction extends FilterFunction { constructor() { super('len'); } }
 class CurrentUser extends FilterPlaceholder { constructor() { super('me'); } }
@@ -208,7 +208,7 @@ PlaceholderResolver.setResolver(name => name === 'me' ? new CurrentUser() : null
 ## Field and node mapping
 
 ```ts
-import { ParseContextImpl } from 'filterkit';
+import { ParseContextImpl } from '@turkraft/filterkit';
 
 const ctx = new ParseContextImpl(
   (field) => field === 'dbName' ? 'clientName' : field,
