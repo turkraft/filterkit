@@ -86,4 +86,5 @@ export {
   matches,
   expr,
   createPredicate,
+  f,
 } from './filterkit.js';

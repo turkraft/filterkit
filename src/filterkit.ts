@@ -49,6 +49,7 @@ export function expr(input: string): FilterNode {
 }
 
 export { createPredicate };
+export { f } from './template.js';
 export { FilterBuilder } from './builder.js';
 export { FilterParserImpl } from './parser.js';
 export { FilterOperatorsImpl, getDefaultOperators } from './operators.js';

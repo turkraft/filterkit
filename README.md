@@ -3,10 +3,10 @@
 Filter expression language for JavaScript and TypeScript. Filter arrays in-memory, or build filter queries to send to [Spring Filter](https://github.com/turkraft/springfilter) backends.
 
 ```ts
-import { filter, build, stringify } from '@turkraft/filterkit';
+import { f, filter, build, stringify } from '@turkraft/filterkit';
 
-// Filter an array
-const adults = filter(users, "age > 18 and status : 'active'");
+// Filter an array with a template literal
+const adults = filter(users, f`age > ${18} and status in ${['active', 'pending']}`);
 
 // Or build a query for your Spring Boot API
 const query = build()
@@ -50,15 +50,30 @@ Sponsor our project and have your issues prioritized.
 ### Filtering arrays
 
 ```ts
-import { filter, matches } from '@turkraft/filterkit';
+import { f, filter, matches } from '@turkraft/filterkit';
 
 const data = [
   { name: 'John', age: 30, active: true },
   { name: 'Jane', age: 25, active: false },
 ];
 
-filter(data, "age > 28");              // => [{ name: 'John', ... }]
-matches(data[0], "active : true");     // => true
+filter(data, f`age > ${28}`);
+matches(data[0], f`active : ${true}`);
+```
+
+### Template literals
+
+Use the `f` tagged template to build expressions with JavaScript values. Strings are quoted and escaped automatically. Arrays become collections. FilterNode values can be composed.
+
+```ts
+const minAge = 18;
+const statuses = ['active', 'pending'];
+
+const expr = f`age > ${minAge} and status in ${statuses}`;
+
+filter(data, expr);
+stringify(expr);
+// => "age > '18' and status in ['active', 'pending']"
 ```
 
 ### Building queries for Spring Filter
