@@ -25,6 +25,17 @@ FilterKit and Spring Filter share the exact same expression syntax, operator pre
 npm install @turkraft/filterkit
 ```
 
+## Ecosystem
+
+FilterKit powers these integrations:
+
+| Package | Description |
+|---|---|
+| [FilterKit TanStack](https://github.com/turkraft/filterkit-tanstack) | TanStack Table column filters → Spring Filter |
+| [FilterKit QueryBuilder](https://github.com/turkraft/filterkit-querybuilder) | react-querybuilder queries → Spring Filter |
+| [FilterKit Prisma](https://github.com/turkraft/filterkit-prisma) | Filter expressions → Prisma where clauses |
+| [FilterKit Drizzle](https://github.com/turkraft/filterkit-drizzle) | Filter expressions → Drizzle where clauses |
+
 ## [Sponsors](https://github.com/sponsors/torshid)
 
 Sponsor our project and have your issues prioritized.
