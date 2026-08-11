@@ -17,7 +17,7 @@ const query = build()
 fetch(`/api/cars?filter=${encodeURIComponent(stringify(query))}`);
 ```
 
-@turkraft/filterkit and Spring Filter share the exact same expression syntax, operator precedence, and AST. Use the same filter language everywhere.
+FilterKit and Spring Filter share the exact same expression syntax, operator precedence, and AST. Use the same filter language everywhere.
 
 ## Install
 
