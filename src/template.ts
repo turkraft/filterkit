@@ -1,5 +1,6 @@
 import { parse, stringify } from './filterkit.js';
 import { FilterNode } from './nodes.js';
+import { stringifyValue } from './transformer.js';
 
 function serializeValue(val: unknown): string {
   if (val === null || val === undefined) {
@@ -13,6 +14,13 @@ function serializeValue(val: unknown): string {
   if (Array.isArray(val)) {
     const items = val.map(serializeValue).join(', ');
     return `[${items}]`;
+  }
+
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) {
+      throw new Error('Cannot interpolate an invalid Date in filter expression.');
+    }
+    return `'${stringifyValue(val)}'`;
   }
 
   if (typeof val === 'string') {

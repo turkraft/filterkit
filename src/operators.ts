@@ -123,9 +123,9 @@ export class FilterOperatorsImpl implements FilterOperators {
     infix: FilterInfixOperator[],
     postfix: FilterPostfixOperator[]
   ) {
-    this.prefixOperators = prefix;
-    this.infixOperators = infix;
-    this.postfixOperators = postfix;
+    this.prefixOperators = Object.freeze([...prefix]) as FilterPrefixOperator[];
+    this.infixOperators = Object.freeze([...infix]) as FilterInfixOperator[];
+    this.postfixOperators = Object.freeze([...postfix]) as FilterPostfixOperator[];
 
     this.sortedOperators = [];
     for (const op of this.prefixOperators) {
@@ -148,6 +148,7 @@ export class FilterOperatorsImpl implements FilterOperators {
       if (p !== 0) return p;
       return b.token.length - a.token.length;
     });
+    Object.freeze(this.sortedOperators);
   }
 
   getPrefixOperators(): FilterPrefixOperator[] { return this.prefixOperators; }

@@ -146,7 +146,7 @@ export class ComparisonResult extends StepWithResultImpl {
   }
 
   insensitiveLikeCollection(...patterns: (RawValue | StepWithResult)[]): LogicResult {
-    return new LogicResult(this.getOperators(), new CollectionLikeNode(this.get(), new InsensitiveLikeOperator(), patterns.map(p => toStep(this.getOperators(), p).get())));
+    return new LogicResult(this.getOperators(), new CollectionLikeNode(this.get(), this.getOperators().getInfixOperatorByType(InsensitiveLikeOperator), patterns.map(p => toStep(this.getOperators(), p).get())));
   }
 
   in(to: RawValue | StepWithResult | (RawValue | StepWithResult)[]): LogicResult {
@@ -199,7 +199,7 @@ export class ComparisonResult extends StepWithResultImpl {
   }
 
   likeCollection(...patterns: (RawValue | StepWithResult)[]): LogicResult {
-    return new LogicResult(this.getOperators(), new CollectionLikeNode(this.get(), new LikeOperator(), patterns.map(p => toStep(this.getOperators(), p).get())));
+    return new LogicResult(this.getOperators(), new CollectionLikeNode(this.get(), this.getOperators().getInfixOperatorByType(LikeOperator), patterns.map(p => toStep(this.getOperators(), p).get())));
   }
 }
 
@@ -288,6 +288,7 @@ export class InputResult extends StepWithResultImpl {
   insensitiveStartsWith(value: string): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).insensitiveStartsWith(value); }
   insensitiveEndsWith(value: string): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).insensitiveEndsWith(value); }
   insensitiveContains(value: string): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).insensitiveContains(value); }
+  likeCollection(...patterns: (RawValue | StepWithResult)[]): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).likeCollection(...patterns); }
   insensitiveLikeCollection(...patterns: (RawValue | StepWithResult)[]): LogicResult { return new ComparisonResult(this.getOperators(), this.get()).insensitiveLikeCollection(...patterns); }
 }
 

@@ -1,28 +1,21 @@
-import { FilterParserImpl, FunctionResolver, PlaceholderResolver } from './parser.js';
+import { FilterParserImpl, type ParseContext } from './parser.js';
 import { FilterStringTransformer } from './transformer.js';
 import { FilterBuilder } from './builder.js';
-import { getDefaultOperators, SizeFunction, TodayFunction, HelloWorldPlaceholder } from './operators.js';
-import { createPredicate, filter as filterWithNode } from './predicate.js';
+import { createPredicate, filter as filterWithNode, isMatch, type PredicateOptions } from './predicate.js';
 import { FilterNode } from './nodes.js';
-import type { FilterFunction, FilterPlaceholder } from './nodes.js';
 
 const defaultParser = new FilterParserImpl();
 const defaultTransformer = new FilterStringTransformer();
 const defaultBuilder = new FilterBuilder();
 
-FunctionResolver.setResolver((name) => {
-  if (name === 'size') return new SizeFunction();
-  if (name === 'today') return new TodayFunction();
-  throw new Error(`Unrecognized function \`${name}\``);
-});
+export type FilterInput = string | FilterNode;
 
-PlaceholderResolver.setResolver((name) => {
-  if (name === 'hello') return new HelloWorldPlaceholder();
-  throw new Error(`Unrecognized placeholder \`${name}\``);
-});
+function toNode(expression: FilterInput): FilterNode {
+  return expression instanceof FilterNode ? expression : defaultParser.parse(expression);
+}
 
-export function parse(input: string): FilterNode {
-  return defaultParser.parse(input);
+export function parse(input: string, ctx?: ParseContext | null): FilterNode {
+  return defaultParser.parse(input, ctx);
 }
 
 export function stringify(node: FilterNode): string {
@@ -33,22 +26,20 @@ export function build(): FilterBuilder {
   return defaultBuilder;
 }
 
-export function filter<T>(data: T[], expression: string): T[] {
-  const node = defaultParser.parse(expression);
-  return filterWithNode(data, node);
+export function filter<T>(data: T[], expression: FilterInput, options?: PredicateOptions): T[] {
+  return filterWithNode(data, toNode(expression), options);
 }
 
-export function matches<T>(obj: T, expression: string): boolean {
-  const node = defaultParser.parse(expression);
-  const pred = createPredicate(node);
-  return pred(obj);
+export function matches<T>(obj: T, expression: FilterInput, options?: PredicateOptions): boolean {
+  return isMatch(createPredicate(toNode(expression), options), obj);
 }
 
-export function expr(input: string): FilterNode {
-  return defaultParser.parse(input);
+export function expr(input: string, ctx?: ParseContext | null): FilterNode {
+  return defaultParser.parse(input, ctx);
 }
 
 export { createPredicate };
+export type { PredicateOptions };
 export { f } from './template.js';
 export { FilterBuilder } from './builder.js';
 export { FilterParserImpl } from './parser.js';

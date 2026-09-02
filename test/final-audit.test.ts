@@ -99,7 +99,6 @@ describe('comprehensive final audit', () => {
 
   describe('syntax coverage', () => {
     const syntax = [
-      // basic comparisons
       "a : '1'",
       "a ! '1'",
       "a = '1'",
@@ -110,36 +109,26 @@ describe('comprehensive final audit', () => {
       "a <: '1'",
       "a >= '1'",
       "a <= '1'",
-      // string
       "a ~ 'x%'",
       "a ~~ 'x%'",
       "a like 'x%'",
       "a ilike 'x%'",
-      // null / empty
       "a is null",
       "a is not null",
       "a is empty",
       "a is not empty",
-      // in
       "a in ['x', 'y']",
       "a not in ['x', 'y']",
-      // logic
       "a : '1' and b : '2'",
       "a : '1' or b : '2'",
       "a : '1' xor b : '2'",
       "not a : '1'",
-      // between
       "a between '1' and '10'",
       "a between b and c",
-      // parens
       "(a : '1' or b : '2') and c : '3'",
-      // collection as field
       "[a, b] is empty",
-      // function
       "size(x) > '0'",
-      // placeholder
       "x : `hello`",
-      // nested field
       "a.b.c : 'deep'",
     ];
 

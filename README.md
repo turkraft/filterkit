@@ -17,8 +17,6 @@ const query = build()
 fetch(`/api/cars?filter=${encodeURIComponent(stringify(query))}`);
 ```
 
-FilterKit and Spring Filter share the exact same expression syntax, operator precedence, and AST.
-
 ## Install
 
 ```bash
@@ -29,8 +27,8 @@ npm install @turkraft/filterkit
 
 | Package | Description |
 |---|---|
-| [FilterKit TanStack](https://github.com/turkraft/filterkit-tanstack) | TanStack Table column filters → Spring Filter |
-| [FilterKit QueryBuilder](https://github.com/turkraft/filterkit-querybuilder) | react-querybuilder queries → Spring Filter |
+| [FilterKit TanStack](https://github.com/turkraft/filterkit-tanstack) | TanStack Table column filters → filter expressions |
+| [FilterKit QueryBuilder](https://github.com/turkraft/filterkit-querybuilder) | react-querybuilder queries → filter expressions |
 | [FilterKit Prisma](https://github.com/turkraft/filterkit-prisma) | Filter expressions → Prisma where clauses |
 | [FilterKit Drizzle](https://github.com/turkraft/filterkit-drizzle) | Filter expressions → Drizzle where clauses |
 
@@ -49,6 +47,8 @@ Sponsor our project and have your issues prioritized.
 
 ### Filtering arrays
 
+`filter` and `matches` accept either an expression string or a parsed `FilterNode`.
+
 ```ts
 import { f, filter, matches } from '@turkraft/filterkit';
 
@@ -57,13 +57,14 @@ const data = [
   { name: 'Jane', age: 25, active: false },
 ];
 
-filter(data, f`age > ${28}`);
-matches(data[0], f`active : ${true}`);
+filter(data, 'age > 28');          // => [{ name: 'John', ... }]
+filter(data, f`age > ${28}`);      // same, with a JS value interpolated
+matches(data[0], f`active : ${true}`);  // => true
 ```
 
 ### Template literals
 
-Use the `f` tagged template to build expressions with JavaScript values. Strings are quoted and escaped automatically. Arrays become collections. FilterNode values can be composed.
+Use the `f` tagged template to build expressions with JavaScript values. Strings are quoted and escaped automatically. Arrays become collections. `FilterNode` values can be composed.
 
 ```ts
 const minAge = 18;
@@ -76,7 +77,18 @@ stringify(expr);
 // => "age > '18' and status in ['active', 'pending']"
 ```
 
-### Building queries for Spring Filter
+`Date` values are interpolated as ISO-8601, so they survive a round trip through a
+string and are unambiguous on the wire:
+
+```ts
+stringify(f`createdAt > ${new Date('2024-03-05T10:20:30Z')}`);
+// => "createdAt > '2024-03-05T10:20:30.000Z'"
+```
+
+Interpolation is the only safe way to put user input into an expression — a value
+containing `'` is escaped rather than closing the literal.
+
+### Building queries for an API
 
 ```ts
 import { build, stringify } from '@turkraft/filterkit';
@@ -90,13 +102,16 @@ stringify(node);
 // => year > '2020' and category is null
 ```
 
-Complex queries:
+Complex queries. `stringify` adds parentheses wherever they are needed to preserve
+the grouping you built:
 
 ```ts
 build().field('brand.name').in(['audi', 'bmw'])
   .and(build().field('year').greaterThan(2020)
     .or(build().field('km').lessThan(50000)))
   .get();
+
+// => brand.name in ['audi', 'bmw'] and (year > '2020' or km < '50000')
 ```
 
 With functions:
@@ -117,6 +132,27 @@ import { parse, stringify } from '@turkraft/filterkit';
 
 const ast = parse("a > '18' and b : 'c'");
 stringify(ast);  // AST back to canonical string
+```
+
+`stringify` quotes every value: `age > 5` becomes `age > '5'`. A server that
+knows the field's type converts it back, so this is what you want on the wire. It
+does mean the value's JavaScript type is lost — if you are feeding an ORM adapter,
+pass it the `FilterNode` rather than a stringified expression.
+
+Parse errors are `InvalidSyntaxException` and carry the offending position:
+
+```ts
+import { InvalidSyntaxException } from '@turkraft/filterkit';
+
+try {
+  parse('a : : b');
+} catch (e) {
+  if (e instanceof InvalidSyntaxException) {
+    e.input;            // "a : : b"
+    e.position;         // 4
+    e.offendingSymbol;  // ":"
+  }
+}
 ```
 
 ## Operators
@@ -149,16 +185,29 @@ a is empty           // empty check (collections/strings)
 a is not empty       // not empty check
 ```
 
-All operators are case-insensitive.
+Operator tokens are case-insensitive (`IS NULL`, `LiKe`). Multi-word operators
+(`is null`, `is not null`, `is empty`, `is not empty`, `not in`) must be written
+with exactly one space between the words.
 
 ### Precedence
 
-Use parentheses to control evaluation order:
+From loosest to tightest: `or`/`xor` (25), `and` (50), `not` (75), everything else
+(100). Use parentheses to override:
 
 ```
 a and (b or c)
 (status : 'active' or status : 'pending') and year > '2020'
 ```
+
+### Wildcards in `like`
+
+`%` matches any run of characters and `_` matches one. The in-memory engine also
+reads `\%` and `\_` as literal wildcards.
+
+If you interpolate user input into a pattern — `contains('...')`, `startsWith('...')`,
+or `%${value}%` — a `%` the user typed becomes a wildcard. Strip or reject those
+characters yourself if that matters, and note that a server may not honour `\%`
+as an escape.
 
 ## Expression Examples
 
@@ -195,7 +244,7 @@ name ~ '%john%'
 name ~~ 'JOHN'
 email ~ 'admin%'
 filename ~ '%.pdf'
-name ~ ['%john%', '%doe%']
+name ~ ['%john%', '%doe%']    // matches if any pattern matches
 ```
 
 ### Boolean logic
@@ -204,6 +253,49 @@ name ~ ['%john%', '%doe%']
 (year > 2020 and km < 30000) or (year > 2018 and km < 10000)
 brand.name in ['audi', 'bmw'] and year > 2020 and accidents is empty and color ! 'white'
 ```
+
+## In-memory evaluation
+
+`filter`, `matches` and `createPredicate` take an options object supplying
+placeholder values and custom function implementations:
+
+```ts
+import { FilterPlaceholder, PlaceholderResolver, matches } from '@turkraft/filterkit';
+
+// 1. make `me` parseable
+class CurrentUser extends FilterPlaceholder { constructor() { super('me'); } }
+PlaceholderResolver.setResolver(name => name === 'me' ? new CurrentUser() : null);
+
+// 2. give it a value at evaluation time
+matches(row, 'owner : `me`', { placeholders: { me: currentUser.id } });
+```
+
+Custom functions work the same way — register the definition once so it parses
+(see [Custom functions and placeholders](#custom-functions-and-placeholders)),
+then pass an implementation:
+
+```ts
+matches(row, 'len(name) > 3', {
+  functions: { len: ([value]) => String(value).length },
+});
+```
+
+Built-in functions: `size(x)` (string length, array/Set/Map size, or object key
+count) and `today()`.
+
+`today()` returns today's date at local midnight, so `createdAt > today()` compares
+as you would expect.
+
+Comparison follows SQL-ish rules: `null` on either side of an ordering comparison
+is never true, numbers and numeric strings compare numerically, `Date` values
+compare against ISO-8601 strings and epoch numbers by instant, booleans compare
+against `'true'` / `'false'` / `'yes'` / `'no'` / `'on'` / `'off'`, and everything
+else compares by code point, so results never depend on the machine's locale.
+
+Booleans need one caveat. `stringify` renders a boolean as the text `'true'`, and
+equality and truthiness read it back, so `active : true` and `not active` behave
+the same before and after a round trip through a string. Ordering does not:
+`a < true` finds no ordering between a number and a boolean. Use `:` for booleans.
 
 ## Custom operators
 
@@ -226,7 +318,12 @@ const parser = new FilterParserImpl(ops);
 parser.parse("name contains 'hello'");
 ```
 
-Custom operators work in all APIs — parse, build, filter, and stringify.
+A custom operator set belongs to the parser (and to `new FilterBuilder(ops)`) that
+you create with it. The top-level `parse`, `filter`, `matches`, `expr`, `f` and
+`build` helpers use the default operator set and will not recognise it. The
+in-memory predicate engine only knows how to evaluate the built-in operators, so a
+custom operator can be parsed, built and stringified but not evaluated by
+`filter`/`matches`.
 
 ## Custom functions and placeholders
 
@@ -240,10 +337,19 @@ FunctionResolver.setResolver(name => name === 'len' ? new LengthFunction() : nul
 PlaceholderResolver.setResolver(name => name === 'me' ? new CurrentUser() : null);
 ```
 
+Return `null` for names you do not handle; the built-in `size`, `today` and `hello`
+definitions remain available. Both resolvers are process-wide singletons, so a
+second `setResolver` call replaces the first — register everything you need in one
+resolver.
+
+Registering a definition makes an expression *parse*. To also *evaluate* it in
+memory, pass an implementation through the `functions` / `placeholders` options
+shown above.
+
 ## Field and node mapping
 
 ```ts
-import { ParseContextImpl } from '@turkraft/filterkit';
+import { ParseContextImpl, parse } from '@turkraft/filterkit';
 
 const ctx = new ParseContextImpl(
   (field) => field === 'dbName' ? 'clientName' : field,
@@ -252,6 +358,55 @@ const ctx = new ParseContextImpl(
 
 parse("dbName : 'john'", ctx);
 ```
+
+The field mapper is applied to each dot-separated segment. The node mapper is
+called exactly once per node, bottom-up, as the tree is built.
+
+## Limits
+
+`parse` raises a catchable `InvalidSyntaxException` once an expression nests
+deeper than `maxDepth` (500 by default), rather than overflowing the stack, so it
+is safe to hand it untrusted input:
+
+```ts
+new FilterParserImpl(undefined, { maxDepth: 100 });
+```
+
+## Using a Spring Filter backend
+
+FilterKit's syntax, operator precedence and AST match
+[Spring Filter](https://github.com/turkraft/springfilter), so expressions built
+here can be sent straight to a Spring Boot API. You can skip this section
+entirely if your backend is something else.
+
+The default parser is slightly more permissive than Spring Filter's grammar.
+Pass `strict: true` to accept only what a Spring Filter backend accepts, so an
+expression that parses on the client is guaranteed to parse on the server:
+
+```ts
+const parser = new FilterParserImpl(undefined, { strict: true });
+```
+
+| Input | Spring Filter | default | `strict: true` |
+|---|---|---|---|
+| `in : 1`, `and : 1` (operator used as a field name) | rejected | accepted | rejected |
+| `a : 'it''s'` (doubled-quote escape) | rejected | accepted | rejected |
+| `a : 'a
+b'` (escape other than `'` and `\`) | rejected | accepted | rejected |
+| a line break used as whitespace | rejected | accepted | rejected |
+| `a Between 1 and 5` (mixed-case keyword) | rejected | accepted | rejected |
+| `a : True` (mixed-case literal) | field named `True` | boolean `true` | field named `True` |
+
+Everything else — operator tokens, priorities, associativity, `between` expansion
+and `like` against a collection of patterns — matches. `test/spring-filter-parity.test.ts`
+checks strict mode against 2,026 expressions whose verdicts came from Spring
+Filter's own lexer and parser.
+
+The in-memory `filter` / `matches` engine is a close but not exact match for
+Spring Filter's own in-memory engine (they agree on 98.3% of a 11,000-expression
+corpus). It differs where FilterKit is deliberately more consistent: `a in ['1']`
+matches a numeric `1` here, and two numeric strings compare numerically. This only
+affects local evaluation, never what you send to the server.
 
 ## License
 

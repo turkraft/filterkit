@@ -54,8 +54,10 @@ export {
   InvalidSyntaxException,
   FunctionResolver,
   PlaceholderResolver,
+  DEFAULT_MAX_DEPTH,
   type FilterParser,
   type ParseContext,
+  type FilterParserOptions,
 } from './parser.js';
 
 export {
@@ -87,4 +89,6 @@ export {
   expr,
   createPredicate,
   f,
+  type FilterInput,
+  type PredicateOptions,
 } from './filterkit.js';

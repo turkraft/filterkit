@@ -65,14 +65,25 @@ export abstract class BaseFilterNodeTransformer<Target> implements FilterNodeTra
   abstract transformPostfixOperation(node: PostfixOperationNode): Target;
 }
 
+export function stringifyValue(value: unknown): string {
+  if (value == null) return 'null';
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? String(value) : value.toISOString();
+  }
+  return String(value);
+}
+
+const ATOMIC = Number.POSITIVE_INFINITY;
+
+const BETWEEN_OPERAND_PRECEDENCE = 101;
+
 export class FilterStringTransformer extends BaseFilterNodeTransformer<string> {
   transformField(node: FieldNode): string {
     return node.getName();
   }
 
   transformInput(node: InputNode): string {
-    const value = node.getValue();
-    const str = value == null ? 'null' : String(value);
+    const str = stringifyValue(node.getValue());
     return "'" + str.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
   }
 
@@ -99,7 +110,7 @@ export class FilterStringTransformer extends BaseFilterNodeTransformer<string> {
 
   transformCollectionLike(node: CollectionLikeNode): string {
     return (
-      this.transform(node.getLeft()) +
+      this.operand(node.getLeft(), node.getOperator().getPriority()) +
       ' ' +
       node.getOperator().getToken() +
       ' [' +
@@ -109,7 +120,11 @@ export class FilterStringTransformer extends BaseFilterNodeTransformer<string> {
   }
 
   transformPrefixOperation(node: PrefixOperationNode): string {
-    return node.getOperator().getToken() + ' ' + this.transform(node.getRight());
+    return (
+      node.getOperator().getToken() +
+      ' ' +
+      this.operand(node.getRight(), node.getOperator().getPriority())
+    );
   }
 
   transformInfixOperation(node: InfixOperationNode): string {
@@ -117,27 +132,58 @@ export class FilterStringTransformer extends BaseFilterNodeTransformer<string> {
       const gteNode = node.getLeft() as InfixOperationNode;
       const lteNode = node.getRight() as InfixOperationNode;
       return (
-        this.transform(gteNode.getLeft()) +
+        this.operand(gteNode.getLeft(), BETWEEN_OPERAND_PRECEDENCE) +
         ' between ' +
-        this.transform(gteNode.getRight()) +
+        this.operand(gteNode.getRight(), BETWEEN_OPERAND_PRECEDENCE) +
         ' and ' +
-        this.transform(lteNode.getRight())
+        this.operand(lteNode.getRight(), BETWEEN_OPERAND_PRECEDENCE)
       );
     }
+    const priority = node.getOperator().getPriority();
     return (
-      this.transform(node.getLeft()) +
+      this.operand(node.getLeft(), priority) +
       ' ' +
       node.getOperator().getToken() +
       ' ' +
-      this.transform(node.getRight())
+      this.operand(node.getRight(), priority, true)
     );
   }
 
   transformPostfixOperation(node: PostfixOperationNode): string {
-    return this.transform(node.getLeft()) + ' ' + node.getOperator().getToken();
+    return (
+      this.operand(node.getLeft(), node.getOperator().getPriority()) +
+      ' ' +
+      node.getOperator().getToken()
+    );
+  }
+
+  protected operand(node: FilterNode, parentPriority: number, rightHandSide = false): string {
+    const rendered = this.transform(node);
+    const priority = FilterStringTransformer.precedenceOf(node);
+    const needsParentheses = rightHandSide
+      ? priority <= parentPriority
+      : priority < parentPriority;
+    return needsParentheses ? '(' + rendered + ')' : rendered;
+  }
+
+  static precedenceOf(node: FilterNode): number {
+    if (node instanceof InfixOperationNode) {
+      return FilterStringTransformer.isBetweenShape(node) ? 100 : node.getOperator().getPriority();
+    }
+    if (node instanceof PrefixOperationNode || node instanceof PostfixOperationNode) {
+      return node.getOperator().getPriority();
+    }
+    if (node instanceof CollectionLikeNode) {
+      return node.getOperator().getPriority();
+    }
+    return ATOMIC;
   }
 
   private isBetweenPattern(node: InfixOperationNode): boolean {
+    return FilterStringTransformer.isBetweenShape(node);
+  }
+
+  private static isBetweenShape(node: InfixOperationNode): boolean {
     if (!(node.getOperator() instanceof AndOperator)) return false;
     const leftOp = node.getLeft();
     const rightOp = node.getRight();
@@ -145,8 +191,17 @@ export class FilterStringTransformer extends BaseFilterNodeTransformer<string> {
     if (!(rightOp instanceof InfixOperationNode)) return false;
     if (!(leftOp.getOperator() instanceof GreaterThanOrEqualOperator)) return false;
     if (!(rightOp.getOperator() instanceof LessThanOrEqualOperator)) return false;
-    const leftField = this.transform(leftOp.getLeft());
-    const rightField = this.transform(rightOp.getLeft());
-    return leftField === rightField;
+    return nodeKey(leftOp.getLeft()) === nodeKey(rightOp.getLeft());
   }
+}
+
+function nodeKey(node: FilterNode): string {
+  if (node instanceof FieldNode) return 'field:' + node.getName();
+  if (node instanceof InputNode) return 'input:' + stringifyValue(node.getValue());
+  if (node instanceof FunctionNode) {
+    return 'fn:' + node.getFunction().getName() + '(' +
+      node.getArguments().map(nodeKey).join(',') + ')';
+  }
+  if (node instanceof PlaceholderNode) return 'ph:' + node.getPlaceholder().getName();
+  return 'other:' + node.constructor.name + ':' + node.getChildren().map(nodeKey).join(',');
 }
